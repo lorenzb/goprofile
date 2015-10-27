@@ -1,0 +1,18 @@
+version: "{build}"
+
+os: Windows Server 2012 R2
+
+clone_folder: c:\gopath\src\github.com\lorenzb\goprofile
+
+environment:
+  GOPATH: c:\gopath
+
+install:
+  - echo %PATH%
+  - echo %GOPATH%
+  - go get github.com/lorenzb/shellwords
+  - go version
+  - go env
+
+build_script:
+  - go test -v github.com/lorenzb/goprofile
