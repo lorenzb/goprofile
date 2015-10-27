@@ -1,5 +1,7 @@
 #goprofile
 
+[![Build Status](https://travis-ci.org/lorenzb/goprofile.svg?branch=master)](https://travis-ci.org/lorenzb/goprofile)
+
 In one simple equation:
 **'go build' + profiling instrumentation = goprofile.**
 
