@@ -7,6 +7,12 @@ In one simple equation:
 
 goprofile is similar to go build, but instruments your program with profiling code (using the "runtime/pprof" package) before building it.
 
+##Installation
+Simply run
+```
+go get github.com/lorenzb/goprofile
+```
+
 ##How mature is goprofile?
 goprofile is **not** mature software. More like "early-alpha".
 So if your rely on it in production, and things go wrong...
