@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lorenzb/shellwords"
+	shellwords "github.com/mattn/go-shellwords"
 )
 
 var options struct {
