@@ -96,7 +96,6 @@ func TestFlags(t *testing.T) {
 	t.Parallel()
 	te := NewTestEnv(t, "temp_test-hello-flags")
 	te.Run("./goprofile", "-o", "foo", "-p", "baz",
-		filepath.FromSlash("../test/gopath/src/hello/world/hallowelt.go"),
 		filepath.FromSlash("../test/gopath/src/hello/world/helloworld.go"),
 		filepath.FromSlash("../test/gopath/src/hello/world/greeting.go"),
 	)
@@ -115,16 +114,26 @@ func TestBuildFlags(t *testing.T) {
 	te.Dispose()
 }
 
-func TestFiles(t *testing.T) {
+func TestFilesEnglish(t *testing.T) {
 	t.Parallel()
-	te := NewTestEnv(t, "temp_test-hello-files")
+	te := NewTestEnv(t, "temp_test-hello-files-english")
 	te.Run("./goprofile",
 		filepath.FromSlash("../test/gopath/src/hello/world/helloworld.go"),
-		filepath.FromSlash("../test/gopath/src/hello/world/hallowelt.go"),
 		filepath.FromSlash("../test/gopath/src/hello/world/greeting.go"),
 	)
 	te.RunCheckOutput([]byte("Hello world!\n"), "./helloworld.profile")
 	te.CheckNotEmpty("helloworld.pprof")
+	te.Dispose()
+}
+
+func TestFilesGerman(t *testing.T) {
+	t.Parallel()
+	te := NewTestEnv(t, "temp_test-hello-files-german")
+	te.Run("./goprofile",
+		filepath.FromSlash("../test/gopath/src/hello/world/hallowelt.go"),
+	)
+	te.RunCheckOutput([]byte("Hallo Welt!\n"), "./hallowelt.profile")
+	te.CheckNotEmpty("hallowelt.pprof")
 	te.Dispose()
 }
 

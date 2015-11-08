@@ -110,23 +110,27 @@ func hasRelevantEnding(name string) bool {
 	return false
 }
 
-func fileset() ([]string, error) {
-	dir := func(path string) ([]string, error) {
+// Computes the set of files to be instrumented/copied.
+// paths is the set of files
+// list specified whether a list of files (e.g. "foo.go bla.go")
+// or a package was specified.
+func fileset() (paths []string, list bool, err error) {
+	dir := func(path string) ([]string, bool, error) {
 		fd, err := os.Open(path)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		var relevantPaths []string
 		fis, err := fd.Readdir(-1)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		for _, fi := range fis {
 			if !fi.IsDir() && hasRelevantEnding(fi.Name()) {
 				relevantPaths = append(relevantPaths, filepath.Join(path, fi.Name()))
 			}
 		}
-		return relevantPaths, nil
+		return relevantPaths, false, nil
 	}
 
 	switch len(flags.Args()) {
@@ -135,11 +139,11 @@ func fileset() ([]string, error) {
 	case 1:
 		fi, err := os.Stat(flags.Arg(0))
 		if err == nil && !fi.IsDir() {
-			return flags.Args(), nil
+			return flags.Args(), true, nil
 		} else {
 			gopath := os.Getenv("GOPATH")
 			if gopath == "" {
-				return nil, errors.New("Empty GOPATH environment variable")
+				return nil, false, errors.New("Empty GOPATH environment variable")
 			}
 			return dir(filepath.Join(gopath, "src", flags.Arg(0)))
 		}
@@ -149,7 +153,7 @@ func fileset() ([]string, error) {
 		for _, arg := range flags.Args() {
 			_, err := os.Stat(arg)
 			if err != nil {
-				return nil, err
+				return nil, true, err
 			}
 			if dir == "" {
 				dir = filepath.Dir(arg)
@@ -157,11 +161,11 @@ func fileset() ([]string, error) {
 			if dir != filepath.Dir(arg) {
 				err := fmt.Errorf("named files must all be in one directory; have '%s' and '%s'",
 					dir, filepath.Dir(arg))
-				return nil, err
+				return nil, false, err
 			}
 			paths = append(paths, arg)
 		}
-		return paths, nil
+		return paths, true, nil
 	}
 }
 
@@ -220,7 +224,7 @@ func run() error {
 		return err
 	}
 
-	paths, err := fileset()
+	paths, list, err := fileset()
 	if err != nil {
 		return err
 	}
@@ -247,13 +251,16 @@ func run() error {
 		fmt.Fprintln(os.Stderr, "Instrumented executable will save cpu profile as", options.ProfFile)
 	}
 
-	var foundMain bool
-
+	var tos = make(map[string]string)
 	for _, path := range paths {
-		from, to := path, filepath.Join(workdir, filepath.Base(path))
+		tos[path] = filepath.Join(workdir, filepath.Base(path))
+	}
+
+	var foundMain bool
+	for from, to := range tos {
 		var fm bool
 		if options.InPlace {
-			fm, err = processFileInPlace(path)
+			fm, err = processFileInPlace(from)
 		} else {
 			fm, err = processFile(from, to)
 		}
@@ -276,7 +283,13 @@ func run() error {
 
 	cmd := []string{"build"}
 	cmd = append(cmd, options.BuildFlags...)
-	cmd = append(cmd, "-o", options.Output) // TODO: What about invocations with explicity listed files?
+	cmd = append(cmd, "-o", options.Output)
+	if list {
+		for _, to := range tos {
+			fmt.Println("to:", to)
+			cmd = append(cmd, to)
+		}
+	}
 	gobuild := exec.Command("go", cmd...)
 	gobuild.Stdout = os.Stdout
 	gobuild.Stderr = os.Stderr
