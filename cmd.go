@@ -110,10 +110,11 @@ func hasRelevantEnding(name string) bool {
 	return false
 }
 
-// Computes the set of files to be instrumented/copied.
-// paths is the set of files
-// list specified whether a list of files (e.g. "foo.go bla.go")
-// or a package was specified.
+// fileset computes the set of files to be instrumented/copied
+// from the arguments passed to the program.
+// paths is the set of files. list is a boolean indicating whether
+// the set of files was explicitly listed on the command line
+// (e.g. "goprofile foo.go bla.go").
 func fileset() (paths []string, list bool, err error) {
 	dir := func(path string) ([]string, bool, error) {
 		fd, err := os.Open(path)
