@@ -191,14 +191,21 @@ func outputName() (string, error) {
 }
 
 func makeworkdir() (string, error) {
-	dir, err := ioutil.TempDir("", "goprofile")
-	if err != nil {
-		return "", err
-	}
-	dir = filepath.Join(dir, time.Now().Format("2006-02-01T15_04_05"))
-	err = os.MkdirAll(dir, 0700)
-	if err != nil {
-		return "", err
+	var dir string
+	var err error
+
+	if options.InPlace {
+		dir = "."
+	} else {
+		dir, err = ioutil.TempDir("", "goprofile")
+		if err != nil {
+			return "", err
+		}
+		dir = filepath.Join(dir, time.Now().Format("2006-02-01T15_04_05"))
+		err = os.MkdirAll(dir, 0700)
+		if err != nil {
+			return "", err
+		}
 	}
 	if options.PrintWork {
 		fmt.Printf("GOPROFILEWORK='%s'\n", dir)
@@ -207,16 +214,9 @@ func makeworkdir() (string, error) {
 }
 
 func run() error {
-	var err error
-
-	var workdir string
-	if options.InPlace {
-		workdir = "."
-	} else {
-		workdir, err = makeworkdir()
-		if err != nil {
-			return err
-		}
+	workdir, err := makeworkdir()
+	if err != nil {
+		return err
 	}
 
 	wd, err := os.Getwd()

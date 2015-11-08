@@ -1,12 +1,14 @@
 package main
 
 import (
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 )
 
 type testEnv struct {
@@ -47,9 +49,15 @@ func (te *testEnv) SetEnv(varname, val string) {
 	te.envVars[varname] = val
 }
 
+func (te *testEnv) CopyFile(from, to string) {
+	if err := copyFile(filepath.Join(te.wd, from), filepath.Join(te.wd, to)); err != nil {
+		te.t.Fatal(err)
+	}
+}
+
 func (te *testEnv) DuplicateFile(from, to string) {
 	if err := duplicateFile(filepath.Join(te.wd, from), filepath.Join(te.wd, to)); err != nil {
-		te.t.Fatal(te)
+		te.t.Fatal(err)
 	}
 }
 
@@ -92,15 +100,89 @@ func (te *testEnv) CheckNotEmpty(path string) {
 	}
 }
 
+func (te *testEnv) CheckNotTouched(path string) {
+	fullpath := filepath.Join(te.wd, path)
+	fi, err := os.Stat(fullpath)
+	if err != nil {
+		te.t.Fatal(err)
+	}
+	if time.Now().Sub(fi.ModTime()) <= 10*time.Second {
+		te.t.Fatalf("File modified in last 10 secs: %s", fullpath)
+	}
+}
+
+func (te *testEnv) equalContent(path1, path2 string) bool {
+	fullpath1 := filepath.Join(te.wd, path1)
+	fullpath2 := filepath.Join(te.wd, path2)
+
+	f1, err := os.Open(fullpath1)
+	if err != nil {
+		te.t.Fatal(err)
+	}
+	f2, err := os.Open(fullpath2)
+	if err != nil {
+		te.t.Fatal(err)
+	}
+
+	data1, err := ioutil.ReadAll(f1)
+	if err != nil {
+		te.t.Fatal(err)
+	}
+	data2, err := ioutil.ReadAll(f2)
+	if err != nil {
+		te.t.Fatal(err)
+	}
+
+	return reflect.DeepEqual(data1, data2)
+}
+
+func (te *testEnv) CheckSame(path1, path2 string) {
+	if !te.equalContent(path1, path2) {
+		te.t.Fatalf("Test folder: %s Files %s and %s differ", te.wd, path1, path2)
+	}
+}
+
+func (te *testEnv) CheckDifferent(path1, path2 string) {
+	if te.equalContent(path1, path2) {
+		te.t.Fatalf("Test folder: %s Files %s and %s have the same content", te.wd, path1, path2)
+	}
+}
+
+var (
+	pathHelloworld = filepath.FromSlash("../test/gopath/src/hello/world/helloworld.go")
+	pathHallowelt  = filepath.FromSlash("../test/gopath/src/hello/world/hallowelt.go")
+	pathGreeting   = filepath.FromSlash("../test/gopath/src/hello/world/greeting.go")
+)
+
+func checkOriginalsNotTouched(te *testEnv) {
+	te.CheckNotTouched(pathGreeting)
+	te.CheckNotTouched(pathHallowelt)
+	te.CheckNotTouched(pathHelloworld)
+}
+
 func TestFlags(t *testing.T) {
 	t.Parallel()
 	te := NewTestEnv(t, "temp_test-hello-flags")
 	te.Run("./goprofile", "-o", "foo", "-p", "baz",
-		filepath.FromSlash("../test/gopath/src/hello/world/helloworld.go"),
-		filepath.FromSlash("../test/gopath/src/hello/world/greeting.go"),
+		pathHelloworld,
+		pathGreeting,
 	)
 	te.RunCheckOutput([]byte("Hello world!\n"), "./foo")
 	te.CheckNotEmpty("baz")
+	checkOriginalsNotTouched(te)
+	te.Dispose()
+}
+
+func TestFlagsInplace(t *testing.T) {
+	t.Parallel()
+	te := NewTestEnv(t, "temp_test-hello-flags-inplace")
+	te.CopyFile(pathHelloworld, "helloworld.go")
+	te.CopyFile(pathGreeting, "greeting.go")
+	te.Run("./goprofile", "-inplace", "-o", "foo", "-p", "baz", "helloworld.go", "greeting.go")
+	te.RunCheckOutput([]byte("Hello world!\n"), "./foo")
+	te.CheckNotEmpty("baz")
+	te.CheckDifferent(pathHelloworld, "helloworld.go")
+	te.CheckSame(pathGreeting, "greeting.go")
 	te.Dispose()
 }
 
@@ -111,6 +193,7 @@ func TestBuildFlags(t *testing.T) {
 	te.Run("./goprofile", "-buildflags", "-tags german", "hello/world")
 	te.RunCheckOutput([]byte("Hallo Welt!\n"), "./world.profile")
 	te.CheckNotEmpty("world.pprof")
+	checkOriginalsNotTouched(te)
 	te.Dispose()
 }
 
@@ -118,11 +201,12 @@ func TestFilesEnglish(t *testing.T) {
 	t.Parallel()
 	te := NewTestEnv(t, "temp_test-hello-files-english")
 	te.Run("./goprofile",
-		filepath.FromSlash("../test/gopath/src/hello/world/helloworld.go"),
-		filepath.FromSlash("../test/gopath/src/hello/world/greeting.go"),
+		pathHelloworld,
+		pathGreeting,
 	)
 	te.RunCheckOutput([]byte("Hello world!\n"), "./helloworld.profile")
 	te.CheckNotEmpty("helloworld.pprof")
+	checkOriginalsNotTouched(te)
 	te.Dispose()
 }
 
@@ -130,10 +214,11 @@ func TestFilesGerman(t *testing.T) {
 	t.Parallel()
 	te := NewTestEnv(t, "temp_test-hello-files-german")
 	te.Run("./goprofile",
-		filepath.FromSlash("../test/gopath/src/hello/world/hallowelt.go"),
+		pathHallowelt,
 	)
 	te.RunCheckOutput([]byte("Hallo Welt!\n"), "./hallowelt.profile")
 	te.CheckNotEmpty("hallowelt.pprof")
+	checkOriginalsNotTouched(te)
 	te.Dispose()
 }
 
@@ -144,18 +229,35 @@ func TestPackage(t *testing.T) {
 	te.Run("./goprofile", "hello/world")
 	te.RunCheckOutput([]byte("Hello world!\n"), "./world.profile")
 	te.CheckNotEmpty("world.pprof")
+	checkOriginalsNotTouched(te)
 	te.Dispose()
 }
 
 func TestEmpty(t *testing.T) {
 	t.Parallel()
 	te := NewTestEnv(t, "temp_test-hello-empty")
-	te.DuplicateFile(filepath.FromSlash("../test/gopath/src/hello/world/hallowelt.go"), "hallowelt.go")
-	te.DuplicateFile(filepath.FromSlash("../test/gopath/src/hello/world/helloworld.go"), "helloworld.go")
-	te.DuplicateFile(filepath.FromSlash("../test/gopath/src/hello/world/greeting.go"), "greeting.go")
+	te.DuplicateFile(pathHallowelt, "hallowelt.go")
+	te.DuplicateFile(pathHelloworld, "helloworld.go")
+	te.DuplicateFile(pathGreeting, "greeting.go")
 	te.Run("./goprofile")
 	te.RunCheckOutput([]byte("Hello world!\n"), "./temp_test-hello-empty.profile")
 	te.CheckNotEmpty("temp_test-hello-empty.pprof")
+	checkOriginalsNotTouched(te)
+	te.Dispose()
+}
+
+func TestEmptyInplace(t *testing.T) {
+	t.Parallel()
+	te := NewTestEnv(t, "temp_test-hello-empty-inplace")
+	te.CopyFile(pathHallowelt, "hallowelt.go")
+	te.CopyFile(pathHelloworld, "helloworld.go")
+	te.CopyFile(pathGreeting, "greeting.go")
+	te.Run("./goprofile", "-inplace")
+	te.RunCheckOutput([]byte("Hello world!\n"), "./temp_test-hello-empty-inplace.profile")
+	te.CheckNotEmpty("temp_test-hello-empty-inplace.profile")
+	te.CheckDifferent(pathHallowelt, "hallowelt.go")
+	te.CheckDifferent(pathHelloworld, "helloworld.go")
+	te.CheckSame(pathGreeting, "greeting.go")
 	te.Dispose()
 }
 
