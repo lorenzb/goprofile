@@ -185,13 +185,12 @@ func outputName() (string, error) {
 }
 
 func makeworkdir() (string, error) {
-	//dir, err := ioutil.TempDir(".", "goprofile")
-	dir := filepath.Join(".", "goprofile_temp", time.Now().Format("2006-02-01T15_04_05"))
-	err := os.MkdirAll(dir, 0777)
+	dir, err := ioutil.TempDir("", "goprofile")
 	if err != nil {
 		return "", err
 	}
-	dir, err = ioutil.TempDir(dir, "")
+	dir = filepath.Join(dir, time.Now().Format("2006-02-01T15_04_05"))
+	err = os.MkdirAll(dir, 0700)
 	if err != nil {
 		return "", err
 	}
