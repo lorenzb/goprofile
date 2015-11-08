@@ -1,7 +1,13 @@
 language: go
 
 before_install:
-  - go get github.com/lorenzb/shellwords
+  - go get github.com/mattn/go-shellwords
+
+before_script:
+  - sleep 10 # The tests check whether a file was modified by checking
+             # when the file was last modified. The git clone modifies
+             # all files in the repo. We wait 10 seconds to make sure
+             # that the timestamp checks in the tests don't fail.
 
 go:
   - 1.3
