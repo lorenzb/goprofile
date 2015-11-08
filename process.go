@@ -49,3 +49,32 @@ func processFile(from, to string) (foundMain bool, err error) {
 		return false, nil
 	}
 }
+
+func processFileInPlace(path string) (foundMain bool, err error) {
+	if !strings.HasSuffix(path, ".go") {
+		return false, nil
+	}
+
+	var fileAst *ast.File
+	fs := token.NewFileSet()
+	fileAst, err = parser.ParseFile(fs, path, nil, parser.ParseComments)
+	if err != nil {
+		return false, fmt.Errorf("Parser error: %s", err)
+	}
+
+	if hasMain(fileAst) {
+		instrument(fileAst, options.ProfFile)
+
+		outFile, err := os.OpenFile(path, os.O_TRUNC|os.O_WRONLY, 0666)
+		if err != nil {
+			return true, fmt.Errorf("Failed to truncate file: %s", err)
+		}
+		defer outFile.Close()
+
+		printer.Fprint(outFile, fs, fileAst)
+
+		return true, nil
+	} else {
+		return false, nil
+	}
+}

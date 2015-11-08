@@ -15,6 +15,7 @@ import (
 )
 
 var options struct {
+	InPlace    bool
 	PrintWork  bool
 	Verbose    bool
 	Output     string
@@ -32,6 +33,7 @@ func main() {
 	flags.StringVar(&buildFlags, "buildflags", "", "arguments to pass on to the underlying invocation of 'go build'")
 	flags.BoolVar(&help, "h", false, "")
 	flags.BoolVar(&help, "help", false, "show help")
+	flags.BoolVar(&options.InPlace, "inplace", false, "perform instrumentation in-place \n    \tDANGER: This will overwrite your source files! \n    \tOnly use this if your files are under version control.")
 	flags.StringVar(&options.Output, "o", "", "path to instrumented output binary")
 	flags.StringVar(&options.ProfFile, "p", "", "path to profiling output")
 	flags.BoolVar(&options.Verbose, "v", false, "")
@@ -201,9 +203,16 @@ func makeworkdir() (string, error) {
 }
 
 func run() error {
-	workdir, err := makeworkdir()
-	if err != nil {
-		return err
+	var err error
+
+	var workdir string
+	if options.InPlace {
+		workdir = "."
+	} else {
+		workdir, err = makeworkdir()
+		if err != nil {
+			return err
+		}
 	}
 
 	wd, err := os.Getwd()
@@ -242,7 +251,12 @@ func run() error {
 
 	for _, path := range paths {
 		from, to := path, filepath.Join(workdir, filepath.Base(path))
-		fm, err := processFile(from, to)
+		var fm bool
+		if options.InPlace {
+			fm, err = processFileInPlace(path)
+		} else {
+			fm, err = processFile(from, to)
+		}
 		if err != nil {
 			return err
 		}
