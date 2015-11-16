@@ -11,6 +11,7 @@ import (
 	"time"
 )
 
+// testEnv represents a test environment that can be created and disposed
 type testEnv struct {
 	t       *testing.T
 	envVars map[string]string

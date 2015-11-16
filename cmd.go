@@ -228,7 +228,7 @@ func makeWorkdir() (string, error) {
 }
 
 func run() error {
-	workdir, err := makeworkdir()
+	workdir, err := makeWorkdir()
 	if err != nil {
 		return err
 	}

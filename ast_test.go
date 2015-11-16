@@ -11,7 +11,7 @@ import (
 )
 
 var tests = []struct {
-	Src            string
+	src            string
 	hasMain        bool
 	hasPProfImport bool
 }{
@@ -74,9 +74,9 @@ func parse(t *testing.T, src string) *ast.File {
 func TestHasMain(t *testing.T) {
 	t.Parallel()
 	for _, test := range tests {
-		ast := parse(t, test.Src)
+		ast := parse(t, test.src)
 		if hm := hasMain(ast); hm != test.hasMain {
-			t.Fatalf("expected %v, got %v\nSource code:%s", test.hasMain, hm, test.Src)
+			t.Fatalf("expected %v, got %v\nSource code:%s", test.hasMain, hm, test.src)
 		}
 	}
 }
@@ -84,9 +84,9 @@ func TestHasMain(t *testing.T) {
 func TestHasImport(t *testing.T) {
 	t.Parallel()
 	for _, test := range tests {
-		ast := parse(t, test.Src)
+		ast := parse(t, test.src)
 		if hi := hasImport(ast, `"runtime/pprof"`); hi != test.hasPProfImport {
-			t.Fatalf("expected %v, got %v\nSource code:%s", test.hasPProfImport, hi, test.Src)
+			t.Fatalf("expected %v, got %v\nSource code:%s", test.hasPProfImport, hi, test.src)
 		}
 	}
 }

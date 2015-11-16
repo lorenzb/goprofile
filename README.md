@@ -38,19 +38,23 @@ the current directory as a package.
 
 Flags:
   -buildflags string
-    	arguments to pass on to the underlying invocation of 'go build'
-  -h	
+      arguments to pass on to the underlying invocation of 'go build'
+  -h
   -help
-    	show help
+      show help
+  -inplace
+      perform instrumentation in-place
+      DANGER: This will overwrite your source files!
+      Only use this if your files are under version control.
   -o string
-    	path to instrumented output binary
+      path to instrumented output binary
   -p string
-    	path to profiling output
-  -v	
+      path to profiling output
+  -v
   -verbose
-    	print verbose output
+      print verbose output
   -work
-    	print the name of the temporary work directory
+      print the name of the temporary work directory
 
 Examples:
 1)
@@ -70,11 +74,20 @@ server. You run
 
 Details:
 If goprofile receives multiple source files as arguments
-(e.g. goprofile foo.go cmd.go), it will name the output after the first file 
+(e.g. goprofile foo.go cmd.go), it will name the output after the first file
 (e.g. foo.profile). If a package is passed, the output will be named after the
 last element of the package path. If nothing is passed, goprofile will name
 the output after the current working directory.
 ```
+
+##Code organization
+
+* `cmd.go` contains the CLI.
+* `ast.go` contains functionality for traversing and instrumenting ASTs.
+* `process.go` contains logic for processing different types of files, e.g.
+  parsing go source code, instrumenting it (using functions from `ast.go`)
+  and writing the instrumented AST to disk.
+* `util.go` contains utility functions.
 
 ##License
 goprofile is licensed under a 2-clause BSD license:
