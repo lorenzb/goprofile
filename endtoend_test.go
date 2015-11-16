@@ -11,13 +11,22 @@ import (
 	"time"
 )
 
-// testEnv represents a test environment that can be created and disposed
+// A testEnv is a test environment that can be created and disposed.
+// It offer various methods for manipulating the file system,
+// that all cause a test failure in case of an error. Using these methods
+// makes writing tests more convenient because we don't have to explicitly
+// check for errors after every call.
 type testEnv struct {
-	t       *testing.T
+	// underlying testing.T on which Fatal is called in case of an error
+	t *testing.T
+	// environment variables
 	envVars map[string]string
-	wd      string
+	// working directory
+	wd string
 }
 
+// NewTestEnv creates a new testEnv. The testEnv's working directory
+// is a newly created directory with the provided name.
 func NewTestEnv(t *testing.T, name string) *testEnv {
 	te := testEnv{
 		t:       t,
