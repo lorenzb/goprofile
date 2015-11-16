@@ -14,6 +14,7 @@ import (
 	shellwords "github.com/mattn/go-shellwords"
 )
 
+// command line options
 var options struct {
 	InPlace    bool
 	PrintWork  bool
@@ -25,6 +26,8 @@ var options struct {
 
 var flags flag.FlagSet
 
+// main handles argument parsing, usage information, and exiting with an appropriate
+// exit code. After argument parsing, main calls run() to do all the actual work.
 func main() {
 	var buildFlags string
 	var help bool
@@ -116,6 +119,7 @@ func isRelevant(name string) bool {
 
 // fileset computes the set of files to be instrumented/copied
 // from the arguments passed to the program.
+//
 // paths is the set of files. list is a boolean indicating whether
 // the set of files was explicitly listed on the command line
 // (e.g. "goprofile foo.go bla.go").
@@ -174,6 +178,8 @@ func fileset() (paths []string, list bool, err error) {
 	}
 }
 
+// outputName returns the name of the executable
+// that 'go build' would build with the given arguments.
 func outputName() (string, error) {
 	switch len(flags.Args()) {
 	case 0:
@@ -195,7 +201,10 @@ func outputName() (string, error) {
 	}
 }
 
-func makeworkdir() (string, error) {
+// makeWorkdir returns the path to the directory in which go profile
+// should store the instrumented source files. If the directory does
+// not exist, makeWorkdir creates it.
+func makeWorkdir() (string, error) {
 	var dir string
 	var err error
 

@@ -21,7 +21,7 @@ func processGoFile(from, to string) (foundMain bool, err error) {
 	if hasMain(fileAst) {
 		instrument(fileAst, options.ProfFile)
 
-		outFile, err := os.OpenFile(to, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0666)
+		outFile, err := os.OpenFile(to, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0644)
 		if err != nil {
 			return true, fmt.Errorf("Failed to create file: %s", err)
 		}

@@ -8,6 +8,7 @@ import (
 	"strconv"
 )
 
+// newProfileStmt returns an ast node roughly equivalent to the following code:
 // {
 // 	f, err := os.Create("goprofile.prof")
 // 	if err != nil {
@@ -91,6 +92,8 @@ func newProfileStmt(proffile string) ast.Stmt {
 	}
 }
 
+// newImportDecls returns an ast node corresponding to an import
+// declaration of the provided path
 func newImportDecl(path string) *ast.GenDecl {
 	return &ast.GenDecl{
 		Tok: token.IMPORT,
@@ -133,6 +136,8 @@ func hasMain(file *ast.File) bool {
 	return foundMain
 }
 
+// hasImport determines whether the given file imports the package
+// at path.
 func hasImport(file *ast.File, path string) bool {
 	var foundImport bool
 	inspector := func(node ast.Node) bool {
@@ -149,6 +154,9 @@ func hasImport(file *ast.File, path string) bool {
 	return foundImport
 }
 
+// instrument adds profiling code to the given file ast.
+// If any of the packages required by the profiling code aren't present,
+// instrument adds import declarations for them.
 func instrument(file *ast.File, proffile string) {
 	inspector := func(node ast.Node) bool {
 		switch node := node.(type) {
