@@ -98,7 +98,11 @@ func main() {
 	}
 }
 
-func hasRelevantEnding(name string) bool {
+// isRelevant decides whether a file is relevant to 'go build'.
+func isRelevant(name string) bool {
+	if name[0] == '.' {
+		return false
+	}
 	for _, suff := range []string{
 		".go", ".c", ".cc", ".cpp", ".cxx", ".m", ".h", ".hh",
 		".hpp", "hxx", ".s", ".swig", ".swigcxx", ".syso",
@@ -127,7 +131,7 @@ func fileset() (paths []string, list bool, err error) {
 			return nil, false, err
 		}
 		for _, fi := range fis {
-			if !fi.IsDir() && hasRelevantEnding(fi.Name()) {
+			if !fi.IsDir() && isRelevant(fi.Name()) {
 				relevantPaths = append(relevantPaths, filepath.Join(path, fi.Name()))
 			}
 		}
