@@ -107,7 +107,7 @@ func testInstrument(t *testing.T, proffile, srcOrig, srcExpected string) {
 
 }
 
-func TestInstrument(t *testing.T) {
+func TestInstrument1(t *testing.T) {
 	t.Parallel()
 	proffile := "bla.prof"
 	srcOrig := `
@@ -125,7 +125,7 @@ func TestInstrument(t *testing.T) {
 		{
  			f, err := os.Create("bla.prof")
 		 	if err != nil {
-		 		fmt.Println("Couldn't open bla.prof:", err)
+		 		os.Stderr.WriteString("Couldn't open bla.prof: "+err.Error()+"\n")
  				return
 		 	}
 	 		pprof.StartCPUProfile(f)
@@ -154,7 +154,7 @@ func TestInstrumentQuoting(t *testing.T) {
 		{
  			f, err := os.Create("foo\" \"asd.out")
 		 	if err != nil {
-		 		fmt.Println("Couldn't open foo\" \"asd.out:", err)
+		 		os.Stderr.WriteString("Couldn't open foo\" \"asd.out: "+err.Error()+"\n")
  				return
 		 	}
 	 		pprof.StartCPUProfile(f)
@@ -195,7 +195,7 @@ func TestInstrumentImportsPresent(t *testing.T) {
 		{
  			f, err := os.Create("foo.pprof")
 		 	if err != nil {
-		 		fmt.Println("Couldn't open foo.pprof:", err)
+		 		os.Stderr.WriteString("Couldn't open foo.pprof: "+err.Error()+"\n")
  				return
 		 	}
 	 		pprof.StartCPUProfile(f)
@@ -235,7 +235,7 @@ func TestInstrumentSomeImportsPresent(t *testing.T) {
 		{
  			f, err := os.Create("foo.pprof")
 		 	if err != nil {
-		 		fmt.Println("Couldn't open foo.pprof:", err)
+		 		os.Stderr.WriteString("Couldn't open foo.pprof: "+err.Error()+"\n")
  				return
 		 	}
 	 		pprof.StartCPUProfile(f)

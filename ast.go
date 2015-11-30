@@ -8,11 +8,11 @@ import (
 	"strconv"
 )
 
-// newProfileStmt returns an ast node roughly equivalent to the following code:
+// newProfileStmt returns an ast node equivalent to the following code:
 // {
-// 	f, err := os.Create("goprofile.prof")
+// 	f, err := os.Create("<proffile>")
 // 	if err != nil {
-// 		fmt.Println("Couldn't open goprofile.prof:", err)
+// 		os.Stderr.WriteString("Couldn't open <proffile>: " + err.Error() + "\n")
 // 		return
 // 	}
 // 	pprof.StartCPUProfile(f)
@@ -53,15 +53,34 @@ func newProfileStmt(proffile string) ast.Stmt {
 						&ast.ExprStmt{
 							X: &ast.CallExpr{
 								Fun: &ast.SelectorExpr{
-									X:   &ast.Ident{Name: "fmt"},
-									Sel: &ast.Ident{Name: "Println"},
+									X: &ast.SelectorExpr{
+										X:   &ast.Ident{Name: "os"},
+										Sel: &ast.Ident{Name: "Stderr"},
+									},
+									Sel: &ast.Ident{Name: "WriteString"},
 								},
 								Args: []ast.Expr{
-									&ast.BasicLit{
-										Kind:  token.STRING,
-										Value: strconv.Quote(fmt.Sprintf("Couldn't open %s:", proffile)),
+									&ast.BinaryExpr{
+										Op: token.ADD,
+										X: &ast.BinaryExpr{
+											Op: token.ADD,
+											X: &ast.BasicLit{
+												Kind:  token.STRING,
+												Value: strconv.Quote(fmt.Sprintf("Couldn't open %s: ", proffile)),
+											},
+											Y: &ast.CallExpr{
+												Fun: &ast.SelectorExpr{
+													X:   &ast.Ident{Name: "err"},
+													Sel: &ast.Ident{Name: "Error"},
+												},
+												Args: nil,
+											},
+										},
+										Y: &ast.BasicLit{
+											Kind:  token.STRING,
+											Value: strconv.Quote("\n"),
+										},
 									},
-									&ast.Ident{Name: "err"},
 								},
 							},
 						},
